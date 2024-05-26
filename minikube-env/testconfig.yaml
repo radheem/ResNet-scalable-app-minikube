@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:latest
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/etc/redis/redis.conf
+          subPath: redis.conf
+        args:
+        - redis-server
+        - /usr/local/etc/redis/redis.conf
+      volumes:
+      - name: config
+        configMap:
+          name: redis-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+spec:
+  type: NodePort
+  ports:
+    - port: 30379  # Expose port 30379 for Redis
+      targetPort: 6379  # Target port of the Redis container
+      nodePort: 30379
+  selector:
+    app: redis
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-server
+  template:
+    metadata:
+      labels:
+        app: ml-server
+    spec:
+      containers:
+      - name: ml-server-cont
+        image: ml-server:test4
+        ports:
+        - containerPort: 5000
+        imagePullPolicy: IfNotPresent
+        env:  # Add environment variable for Redis port
+        - name: REDIS_PORT
+          value: "30379"  # Set the port where Redis is exposed
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-server
+spec:
+  selector:
+    app: ml-server  # Change selector to match the labels of your ml-server deployment
+  ports:
+  - protocol: TCP
+    name: serv
+    port: 5000
+    targetPort: 5000
+  type: LoadBalancer
