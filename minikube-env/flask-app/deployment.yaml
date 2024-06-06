@@ -14,9 +14,10 @@ spec:
     spec:
       containers:
       - name: flask-app
-        image: radheemdocker/flask-app:latest
+        image: docker.io/library/flask-app:latest
         ports:
         - containerPort: 5000
+        imagePullPolicy: IfNotPresent
         env:
         - name: REDIS_HOST
           value: redis

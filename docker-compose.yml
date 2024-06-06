@@ -1,26 +1,15 @@
 version: '3.8'
-
-networks:
-  main:
-    driver: bridge
-
 services:
-  redis:
-    image: "redis:alpine"
-    container_name: redis
-    ports:
-      - "6379:6379"
-    expose:
-      - "6379"
-    networks:
-      - main
-
-  ml_server:
+  web:
     build: .
-    container_name: ml_server
     ports:
-      - "5000:5000"  
+     - "5000:5000"
+    volumes:
+     - .:/code
     depends_on:
-      - redis
-    networks:
-      - main
+     - redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+  redis:
+    image: redis
