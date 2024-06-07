@@ -17,6 +17,8 @@ spec:
         image: try-app:latest
         ports:
         - containerPort: 5000
+        - metrics_port: 8000
+        
         imagePullPolicy: IfNotPresent
         env:
         - name: REDIS_HOST
@@ -34,5 +36,8 @@ spec:
   - port: 5000
     targetPort: 5000
     nodePort: 30002
+  - port: 8000
+    targetPort: 8000
+    nodePort: 30003
   selector:
     app: try-app

@@ -3,7 +3,8 @@ services:
   web:
     build: .
     ports:
-     - "5000:5000"
+     - "${PORT}:${PORT}"
+     - "${METRICS_PORT}:${METRICS_PORT}"
     volumes:
      - .:/code
     depends_on:

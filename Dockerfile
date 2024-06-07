@@ -1,7 +1,9 @@
-FROM python:2.7
-ADD . /code
-WORKDIR /code
-RUN pip install -r requirements.txt
-CMD python app.py
+FROM python:3.10-alpine
 
-# docker build -t web .
+ADD . /code
+
+WORKDIR /code
+
+RUN pip install -r requirements.txt
+
+CMD python app.py
