@@ -8,8 +8,10 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install the dependencies specified in the requirements file
-RUN pip install --no-cache-dir -r requirements.txt
-
+RUN apt-get update && apt-get install -y build-essential \
+    && pip install --no-cache-dir -r requirements.txt \
+    && apt-get purge -y --auto-remove build-essential \
+    && rm -rf /var/lib/apt/lists/*
 # Copy the rest of the application code into the container
 COPY . .
 

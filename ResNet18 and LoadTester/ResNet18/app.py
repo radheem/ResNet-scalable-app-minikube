@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify
-import os
 import io
 from PIL import Image
 from  ResNet18 import ImageClassifier  # ImagePredictor class is in a separate file called ResNet18.py
@@ -9,7 +8,7 @@ app = Flask(__name__)
 # Assuming the ImagePredictor is correctly implemented
 classifier = ImageClassifier()
 
-@app.route('/image_prediction', methods=['POST'])
+@app.route('/', methods=['POST'])
 def image_prediction():
     # Check if there is data in the request
     if not request.data:
