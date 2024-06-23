@@ -1,25 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: try-app
+  name: flask-app
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      app: try-app
+      app: flask-app
   template:
     metadata:
       labels:
-        app: try-app
+        app: flask-app
     spec:
       containers:
-      - name: try-app
-        image: try-app:latest
+      - name: flask-app
+        image: resnet18-flask-app:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5000
-        - metrics_port: 8000
-        
-        imagePullPolicy: IfNotPresent
         env:
         - name: REDIS_HOST
           value: redis
@@ -29,15 +27,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: try-app
+  name: flask-app-service
 spec:
-  type: NodePort
-  ports:
-  - port: 5000
-    targetPort: 5000
-    nodePort: 30002
-  - port: 8000
-    targetPort: 8000
-    nodePort: 30003
+  type: LoadBalancer
   selector:
-    app: try-app
+    app: flask-app
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000

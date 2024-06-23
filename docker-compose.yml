@@ -1,7 +1,8 @@
 version: '3.8'
 services:
-  web:
-    build: .
+  resnet18-flask-app:
+    container_name: resnet18-flask-app
+    image: resnet18-flask-app:latest
     ports:
      - "${PORT}:${PORT}"
      - "${METRICS_PORT}:${METRICS_PORT}"

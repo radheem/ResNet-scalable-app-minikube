@@ -1,9 +1,38 @@
-from flask import Flask
+from flask import Flask, request, jsonify
+import io
+from PIL import Image
+from  ResNet18 import ImageClassifier 
 from prometheus_client import Counter, generate_latest, REGISTRY
 from prometheus_client.exposition import start_http_server
 from redis import Redis
 from os import environ
 import json
+
+app = Flask(__name__)
+
+# Assuming the ImagePredictor is correctly implemented
+classifier = ImageClassifier()
+
+@app.route('/predict', methods=['POST'])
+def image_prediction():
+    # Check if there is data in the request
+    if not request.data:
+        return jsonify({'error': 'No data in the request'}), 400
+
+    # Try to open the image from the raw binary data
+    try:
+        image = Image.open(io.BytesIO(request.data))
+    except Exception as e:
+        return jsonify({'error': 'Invalid image data'}), 400
+
+    # Perform the prediction
+    try:
+        results = classifier.predict(image, topk=2)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    return jsonify(results), 200
+
 
 # Get environment variables with default values
 redis_host = environ.get('REDIS_HOST', 'localhost')
@@ -21,7 +50,7 @@ route_hit_counter = Counter('route_hits', 'Count of hits to routes', ['route'])
 def index():
     route_hit_counter.labels(route='/').inc()
     redis.incr('/')
-    return "Hello, World!"
+    return "<h1>Hello, I am working fine!</h1>"
 
 @app.route('/counter')
 def counter():

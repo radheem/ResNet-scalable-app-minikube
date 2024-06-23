@@ -15,7 +15,7 @@ class ImageClassifier:
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 
-        with open("./imagenet_classes.txt", "r") as f:
+        with open("./data/imagenet_classes.txt", "r") as f:
             self.categories = [s.strip() for s in f.readlines()]
 
     def preprocess_image(self, image):
