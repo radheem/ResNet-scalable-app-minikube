@@ -1,7 +1,11 @@
+## Steps
 1. minikube start
-2. minikube image load try-app:latest
+2. minikube image load resnet18-flask-app:latest
 3. kubectl create -f deployments/
+4. minikube tunnel
 
+## access prometheus dashboard
+- kubectl port-forward service/prometheus 9090:9090
 
-## setup prometheus
-1. follow https://github.com/prometheus-operator/kube-prometheus
+## access minikube dashboard
+- minikube dashboard
