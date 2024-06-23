@@ -1,38 +1,12 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect, Response
 import io
 from PIL import Image
-from  ResNet18 import ImageClassifier 
+from ResNet18 import ImageClassifier 
 from prometheus_client import Counter, generate_latest, REGISTRY
 from prometheus_client.exposition import start_http_server
 from redis import Redis
-from os import environ
+from os import environ, path
 import json
-
-app = Flask(__name__)
-
-# Assuming the ImagePredictor is correctly implemented
-classifier = ImageClassifier()
-
-@app.route('/predict', methods=['POST'])
-def image_prediction():
-    # Check if there is data in the request
-    if not request.data:
-        return jsonify({'error': 'No data in the request'}), 400
-
-    # Try to open the image from the raw binary data
-    try:
-        image = Image.open(io.BytesIO(request.data))
-    except Exception as e:
-        return jsonify({'error': 'Invalid image data'}), 400
-
-    # Perform the prediction
-    try:
-        results = classifier.predict(image, topk=2)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-    return jsonify(results), 200
-
 
 # Get environment variables with default values
 redis_host = environ.get('REDIS_HOST', 'localhost')
@@ -43,8 +17,45 @@ metrics_port = int(environ.get('METRICS_PORT', 8000))
 app = Flask(__name__)
 redis = Redis(host=redis_host, port=redis_port)
 
+# Assuming the ImagePredictor is correctly implemented
+classifier = ImageClassifier()
 # Define a Prometheus counter for tracking hits
 route_hit_counter = Counter('route_hits', 'Count of hits to routes', ['route'])
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/predict', methods=['POST'])
+def upload_file():
+    resp = {'msg': 'image not found in request', 'hint': 'add the image to a key named image'}
+    if 'image' not in request.files:
+        return jsonify(resp), 400
+    
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify(resp), 400
+    if file and not allowed_file(file.filename):
+        resp = {'msg': 'invalid image data', 'hint': 'the image may not be of a valid extension'+ str(ALLOWED_EXTENSIONS)}
+        return jsonify(resp), 400
+        
+    try:
+        image = Image.open(io.BytesIO(file.read())) 
+    except Exception as e:
+        resp = {'msg': 'invalid image data', 'hint': 'the image may not be of a valid extension'+ str(ALLOWED_EXTENSIONS), 'error': str(e)}
+        return jsonify(resp), 400
+    
+    try:
+        results = classifier.predict(image, topk=2)
+    except Exception as e:
+        resp = {'msg': 'failed to classify', 'error': str(e)}
+        return jsonify(resp), 400
+    
+    confidence = results[0][1] * 100  
+    label = results[0][0]
+    return f"I am {confidence:.2f} % confident that it is a {label}.", 200
 
 @app.route('/')
 def index():
