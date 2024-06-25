@@ -61,7 +61,12 @@ def predict():
 @REQUEST_TIME.time()
 def index():
     route_hit_counter.labels(route='/').inc()
-    return "<h1>Hello, I am working fine!</h1>"
+    return "<h1>Hello, Hope all good!</h1>"
+
+@app.route('/health')
+def health():
+    route_hit_counter.labels(route='/health').inc()
+    return "OK", 200
 
 
 @app.route('/metrics')
