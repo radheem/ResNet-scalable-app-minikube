@@ -1,4 +1,5 @@
-from flask import Flask, request, jsonify, redirect, Response
+import time
+from flask import Flask, request, jsonify, g
 import io
 from PIL import Image
 from ResNet18 import ImageClassifier 
@@ -19,13 +20,21 @@ classifier = ImageClassifier()
 # Prometheus metrics
 route_hit_counter = Counter('route_hits', 'Count of hits to routes', ['route'])
 REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request', registry=REGISTRY)
-REQUEST_COUNT = Counter('request_count', 'Total number of requests', registry=REGISTRY)
-REQUEST_IN_PROGRESS = Gauge('request_in_progress', 'Requests in progress', registry=REGISTRY)
-REQUEST_LATENCY = Histogram('request_latency_seconds', 'Request latency', registry=REGISTRY)
+REQUEST_COUNT = Counter('request_count', 'Total number of requests',['method', 'endpoint', 'http_status'], registry=REGISTRY)
+REQUEST_LATENCY = Histogram('request_latency_seconds', 'Request latency', ['method', 'endpoint'], registry=REGISTRY)
 
+
+@app.before_request
+def before_request():
+    g.start_time = time.time()
+
+@app.after_request
+def after_request(response):
+    latency = time.time() - g.start_time
+    REQUEST_LATENCY.labels(request.method, request.path).observe(latency)
+    return response
 
 @app.route('/predict', methods=['POST'])
-@REQUEST_IN_PROGRESS.track_inprogress()
 @REQUEST_TIME.time()
 def predict():
     route_hit_counter.labels(route='/predict').inc()
@@ -57,7 +66,6 @@ def predict():
     return f"I am {confidence:.2f} % confident that it is a {label}.", 200
 
 @app.route('/')
-@REQUEST_IN_PROGRESS.track_inprogress()
 @REQUEST_TIME.time()
 def index():
     route_hit_counter.labels(route='/').inc()
