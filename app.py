@@ -1,35 +1,43 @@
-from flask import Flask, request, jsonify, redirect, Response
+import time
+from flask import Flask, request, jsonify, g
 import io
 from PIL import Image
 from ResNet18 import ImageClassifier 
-from prometheus_client import Counter, generate_latest, REGISTRY
+from prometheus_client import Counter, generate_latest, REGISTRY, Summary, Gauge, Histogram
 from prometheus_client.exposition import start_http_server
-from redis import Redis
-from os import environ, path
-import json
+from os import environ
+from constants import ALLOWED_EXTENSIONS
+from utils import allowed_file
 
-# Get environment variables with default values
-redis_host = environ.get('REDIS_HOST', 'localhost')
-redis_port = int(environ.get('REDIS_PORT', 6379))
+# load environment variables
 app_port = int(environ.get('PORT', 5000))
 metrics_port = int(environ.get('METRICS_PORT', 8000))
 
+# Init app and classifier
 app = Flask(__name__)
-redis = Redis(host=redis_host, port=redis_port)
-
-# Assuming the ImagePredictor is correctly implemented
 classifier = ImageClassifier()
-# Define a Prometheus counter for tracking hits
+
+# Prometheus metrics
 route_hit_counter = Counter('route_hits', 'Count of hits to routes', ['route'])
+REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request', registry=REGISTRY)
+REQUEST_COUNT = Counter('request_count', 'Total number of requests',['method', 'endpoint', 'http_status'], registry=REGISTRY)
+REQUEST_LATENCY = Histogram('request_latency_seconds', 'Request latency', ['method', 'endpoint'], registry=REGISTRY)
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+@app.before_request
+def before_request():
+    g.start_time = time.time()
+
+@app.after_request
+def after_request(response):
+    latency = time.time() - g.start_time
+    REQUEST_LATENCY.labels(request.method, request.path).observe(latency)
+    return response
 
 @app.route('/predict', methods=['POST'])
-def upload_file():
+@REQUEST_TIME.time()
+def predict():
+    route_hit_counter.labels(route='/predict').inc()
     resp = {'msg': 'image not found in request', 'hint': 'add the image to a key named image'}
     if 'image' not in request.files:
         return jsonify(resp), 400
@@ -58,33 +66,22 @@ def upload_file():
     return f"I am {confidence:.2f} % confident that it is a {label}.", 200
 
 @app.route('/')
+@REQUEST_TIME.time()
 def index():
     route_hit_counter.labels(route='/').inc()
-    redis.incr('/')
-    return "<h1>Hello, I am working fine!</h1>"
+    return "<h1>Hello, Hope all good!</h1>"
 
-@app.route('/counter')
-def counter():
-    redis.incr('/counter')
-    route_hit_counter.labels(route='/counter').inc()
-    count = redis.get('/counter').decode('utf-8')
-    return f"visited {count} times"
+@app.route('/health')
+def health():
+    route_hit_counter.labels(route='/health').inc()
+    return "OK", 200
 
-@app.route('/redis')
-def redis_data():
-    data = {
-        "/": redis.get('/').decode('utf-8') if redis.get('/') else 0,
-        "/counter": redis.get('/counter').decode('utf-8') if redis.get('/counter') else 0,
-        "/metrics": redis.get('/metrics').decode('utf-8') if redis.get('/metrics') else 0
-    }
-    return json.dumps(data)
 
 @app.route('/metrics')
 def metrics():
-    redis.incr('/metrics')
+    route_hit_counter.labels(route='/metrics').inc()
     return generate_latest(REGISTRY), 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 if __name__ == '__main__':
-    # Start the Prometheus metrics server on the specified port
     start_http_server(metrics_port)
     app.run(host="0.0.0.0", port=app_port)
