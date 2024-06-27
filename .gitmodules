@@ -1,0 +1,3 @@
+[submodule "submodules/load_tester"]
+	path = submodules/load_tester
+	url = https://github.com/radheem/resnet18-app-load-tester.git
