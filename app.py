@@ -43,11 +43,11 @@ def predict():
         return jsonify(resp), 400
     
     file = request.files['image']
-    if file.filename == '':
-        return jsonify(resp), 400
-    if file and not allowed_file(file.filename):
-        resp = {'msg': 'invalid image data', 'hint': 'the image may not be of a valid extension'+ str(ALLOWED_EXTENSIONS)}
-        return jsonify(resp), 400
+    # if file.filename == '':
+    #     return jsonify(resp), 400
+    # if file and not allowed_file(file.filename):
+    #     resp = {'msg': 'invalid data', 'hint': 'filename is blank'}
+    #     return jsonify(resp), 400
         
     try:
         image = Image.open(io.BytesIO(file.read())) 
@@ -63,7 +63,7 @@ def predict():
     
     confidence = results[0][1] * 100  
     label = results[0][0]
-    return f"I am {confidence:.2f} % confident that it is a {label}.", 200
+    return jsonify({'msg':f"I am {confidence:.2f} % confident that it is a {label}."}), 200
 
 @app.route('/')
 @REQUEST_TIME.time()
