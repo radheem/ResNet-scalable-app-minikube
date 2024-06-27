@@ -25,7 +25,7 @@ class BarAzmoon:
             generator_process.start()
             active_children()
             time.sleep(1)
-        print("Spawned all the processes. Waiting to finish...")
+        print(" \n ------------------------------------------------\n\n Spawned all the processes. Waiting to finish... \n ------------------------------------------------\n")
         for p in active_children():
             p.join()
 

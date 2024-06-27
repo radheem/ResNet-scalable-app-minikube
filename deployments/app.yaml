@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: flask-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: flask-app
@@ -23,6 +23,11 @@ spec:
           value: redis
         - name: REDIS_PORT
           value: "6379"
+        resources:
+          limits:
+            cpu: 1000m
+          requests:
+            cpu: 500m
 ---
 apiVersion: v1
 kind: Service

@@ -27,21 +27,20 @@ class MyLoadTester(BarAzmoon):
         return file_name, file_data
 
     def process_response(self, sent_data_id: str, response: requests.Response):
-        # try:
-        #     response_json = response.json()
-        #     print(f"Sent data id: {sent_data_id}")
-        #     print(f"Response: {response_json}")
-        #     return True  # Indicate success
-        # except json.JSONDecodeError:
-        #     print(f"Failed to decode response for data id: {sent_data_id}")
-        #     return False  # Indicate failure
+        try:
+            response_json = response.json() if isinstance(response, requests.Response) else response
+            print(f"Sent data id: {sent_data_id}")
+            print(f"Response: {response_json}")
+            return True  # Indicate success
+        except json.JSONDecodeError:
+            print(f"Failed to decode response for data id: {sent_data_id}")
+            return False  # Indicate failure
 
-        print(response)
 
-if __name__ == "__main__":
-    workload = [1,3,30]  # Example workload, replace with your actual workload
+if __name__ == "__main__":#-----10-----------------20-------------25
+    workload = [1,2,3,4,5,6,8,9,10,1,2,3,4,5,6,8,9,10,20,20,30,30,30,40,]  # Example workload, replace with your actual workload
     image_folder = '../../data/imagenet-sample-images-master/imagenet-sample-images-master/'
-    endpoint = 'http://127.0.0.1:49721/image_prediction'
+    endpoint = 'http://127.0.0.1:5000/image_prediction'
 
     tester = MyLoadTester(image_folder, workload, endpoint)
     tester.start()
