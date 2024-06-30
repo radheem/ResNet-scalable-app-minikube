@@ -8,6 +8,11 @@ from barazmoon import BarAzmoon
 import requests
 import os
 
+def load_workload(file_path: str) -> List[str]:
+    with open(file_path, 'r') as file:
+        content = file.read().strip()
+        integers = [int(x) for x in content.split()]
+    return integers
 
 class MyLoadTester(BarAzmoon):
     def __init__(self, image_folder: str, workload: List[int], endpoint: str):
@@ -34,8 +39,8 @@ class MyLoadTester(BarAzmoon):
     def process_response(self, sent_data_id: str, response: requests.Response):
         try:
             response_json = response.json() if isinstance(response, requests.Response) else response
-            print(f"Sent data id: {sent_data_id}")
-            print(f"Response: {response_json}")
+            # print(f"Sent data id: {sent_data_id}")
+            # print(f"Response: {response_json}")
             return True  # Indicate success
         except json.JSONDecodeError:
             print(f"Failed to decode response for data id: {sent_data_id}")
@@ -43,15 +48,9 @@ class MyLoadTester(BarAzmoon):
 
 
 if __name__ == "__main__":
-    first_250_secs = [20] * 250
-    last_100_secs = [20] * 100
-    set1 = [1] * 400
-    set2 = [60] * 25
-    set3 = [70] * 25
-    set4 = [75] * 150
-    set5 = [40] * 50
-    workload = [*set1]  
-    image_folder = './data/sampleImages'
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    workload = load_workload(dir_path+'/../data/workload.txt')
+    image_folder = dir_path+'/../data/sampleImages'
     endpoint = 'http://127.0.0.1:80/predict'
 
     tester = MyLoadTester(image_folder, workload, endpoint)
