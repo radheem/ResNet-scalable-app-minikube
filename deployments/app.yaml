@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: flask-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: flask-app
@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: flask-app
-        image: resnet18-flask-app:latest
+        image: resnet18-flask-app:v1.1.1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5000
@@ -30,11 +30,11 @@ spec:
           periodSeconds: 10
         resources:
           requests:
-            cpu: "500m"
-            memory: "2560Mi"
-          limits:
             cpu: "1000m"
-            memory: "5120Mi"
+            memory: "1024Mi"
+          limits:
+            cpu: "2000m"
+            memory: "2048Mi"
         env:
         - name: PORT
           value: "5000"

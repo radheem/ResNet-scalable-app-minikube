@@ -9,7 +9,16 @@ import requests
 import os
 
 
+def load_workload(file_path: str) -> List[str]:
+    with open(file_path, 'r') as file:
+        content = file.read().strip()
+        integers = [int(x) for x in content.split()]
+    return integers
+
 class MyLoadTester(BarAzmoon):
+    request_count = 0
+    successful_count = 0
+    failure_count = 0
     def __init__(self, image_folder: str, workload: List[int], endpoint: str):
         super().__init__(workload=workload, endpoint=endpoint, http_method="post")
         self.image_folder = image_folder
@@ -33,26 +42,25 @@ class MyLoadTester(BarAzmoon):
 
     def process_response(self, sent_data_id: str, response: requests.Response):
         try:
+            self.request_count += 1
             response_json = response.json() if isinstance(response, requests.Response) else response
-            print(f"Sent data id: {sent_data_id}")
             print(f"Response: {response_json}")
-            return True  # Indicate success
+            self.successful_count += 1
+            print(f"success percentage: {self.successful_count/self.request_count*100:.2f}%")
+            print(f"failure count: {self.failure_count/self.request_count*100:.2f}%")
+            return True  
         except json.JSONDecodeError:
+            self.failure_count += 1
             print(f"Failed to decode response for data id: {sent_data_id}")
-            return False  # Indicate failure
+            return False 
 
 
 if __name__ == "__main__":
-    first_250_secs = [20] * 250
-    last_100_secs = [20] * 100
-    set1 = [40] * 25
-    set2 = [60] * 25
-    set3 = [70] * 25
-    set4 = [75] * 150
-    set5 = [40] * 50
-    workload = [*first_250_secs, *set1, *set2, *set3, *set4, *set5,*last_100_secs]  
-    image_folder = './data/sampleImages'
-    endpoint = 'http://127.0.0.1:80/predict'
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    workload = [1]
+    # load_workload(dir_path+'/../data/workload.txt')
+    image_folder = dir_path+'/../data/sampleImages'
+    endpoint = 'http://127.0.0.1:5000/predict'
 
     tester = MyLoadTester(image_folder, workload, endpoint)
     tester.start()
