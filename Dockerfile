@@ -5,7 +5,7 @@ ENV METRICS_PORT 8000
 
 WORKDIR /app
 
-COPY . /app
+COPY . .
 
 RUN pip install -r requirements.txt
 
