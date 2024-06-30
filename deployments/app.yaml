@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: flask-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: flask-app
@@ -31,10 +31,8 @@ spec:
         resources:
           requests:
             cpu: "500m"
-            memory: "2560Mi"
           limits:
             cpu: "1000m"
-            memory: "5120Mi"
         env:
         - name: PORT
           value: "5000"
@@ -63,6 +61,6 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: flask-app
-  minReplicas: 2
-  maxReplicas: 10
+  minReplicas: 1
+  maxReplicas: 6
   targetCPUUtilizationPercentage: 50
