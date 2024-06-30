@@ -1,18 +1,29 @@
 ## Step1: Setup Steps
-1. run ```docker build -t resnet18-flask-app:latest .```
-2. run ```minikube start --driver=docker```
-3. run ```minikube image load resnet18-flask-app:latest```
-4. run ```chmod +x scripts/apply-prometheus-crds.sh```
-5. run ```./scripts/apply-prometheus-crds.sh```
-6. run ```kubectl create -f deployments/``` if creating else run ```kubectl apply -f deployments/``` to update configuration 
-7. run ```minikube tunnel```
+1. ``` bash
+    docker build -t resnet18-flask-app:latest .
+    ```
+2. ``` bash
+    minikube start --driver=docker
+    ```
+3. ``` bash
+    minikube image load resnet18-flask-app:latest
+    ```
+4. ``` bash
+    chmod +x scripts/apply-prometheus-crds.sh
+    ```
+5. ``` bash
+    ./scripts/apply-prometheus-crds.sh
+    ```
+6. ``` bash
+    kubectl apply -f deployments/
+    ``` 
+7. ```bash 
+    minikube tunnel
+    ```
 
 ## Step2: Verify deployment
 1. Go to any browser 
 2. Visit localhost
-
-## access prometheus dashboard using 
-- ```kubectl port-forward service/prometheus 9090:9090```
 
 ## access minikube dashboard using
 - minikube dashboard

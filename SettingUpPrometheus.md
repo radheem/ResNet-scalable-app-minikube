@@ -27,16 +27,20 @@ We use Helm to simplify the installation.
    ```bash
    helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
    ```
-
    This installs Prometheus and related components into the `monitoring` namespace. The `kube-prometheus-stack` chart includes Prometheus server, Grafana, and other monitoring tools.
 
-### Step 3: Verify Prometheus Installation
+### Step 3: Adding Pod monitoring to the stack
+```bash
+helm upgrade prometheus prometheus-community/kube-prometheus-stack -f values.yaml -n monitoring
+```
+
+### Step 4: Verify Prometheus Installation
 
 1. Go to the kubernetes dashboard 
 2. Go to the monitoring namespace
 3. Check if prometheus is deployed
 
-### Step 4: Accessing Prometheus UI
+### Step 5: Accessing Prometheus UI
 
 To access the Prometheus UI:
 
@@ -48,18 +52,28 @@ To access the Prometheus UI:
 
 2. **Access UI**: Open http://localhost:9090 in your web browser to access the Prometheus UI.
 
-### Step 5: Visualizing Metrics in Grafana
+### Step 6: Visualizing Metrics in Grafana
 
 1. **Port Forwarding**:
    ```bash
-   kubectl port-forward -n monitoring prometheus-grafana-<GRAFANA-POD-NAME> 3000
+   kubectl port-forward -n monitoring svc/prometheus-grafana 3000
    ```
-   Replace `<GRAFANA-POD-NAME>` with your Grafana pod name.
-
 2. **Access UI**: Open http://localhost:3000 and login with credentials 
 3. default username=`admin` and password=`prom-operator`
 
-### Step 6: setting up dashboard
+### Step 7: setting up dashboard
 You can change the namespace and add other filters if required.
-1. Memory usage query: sum(container_memory_usage_bytes{namespace="default"}) by (namespace, pod)
-2. CPU usage query: sum(rate(container_cpu_usage_seconds_total{namespace="default"}[1m])) by (namespace, pod)
+1. Memory usage query:<br> 
+   ```bash 
+   sum(container_memory_usage_bytes{namespace="default"}) by (namespace, pod)
+   ```
+2. CPU usage query:<br> 
+   ```bash 
+   sum(rate(container_cpu_usage_seconds_total{namespace="default"}[1m])) by (namespace, pod)
+   ```
+3. Average request latency:
+   ```bash
+   sum(rate(request_latency_seconds_sum{endpoint="/predict"}[5m])) 
+   / 
+   sum(rate(request_latency_seconds_count{endpoint="/predict"}[5m]))
+   ``` 
