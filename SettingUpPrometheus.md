@@ -31,7 +31,7 @@ We use Helm to simplify the installation.
 
 ### Step 3: Adding Pod monitoring to the stack
 ```bash
-helm upgrade prometheus prometheus-community/kube-prometheus-stack -f values.yaml -n monitoring
+helm upgrade prometheus prometheus-community/kube-prometheus-stack -f deployments/prometheus.yaml -n monitoring
 ```
 
 ### Step 4: Verify Prometheus Installation
@@ -56,7 +56,7 @@ To access the Prometheus UI:
 
 1. **Port Forwarding**:
    ```bash
-   kubectl port-forward -n monitoring svc/prometheus-grafana 3000
+   kubectl port-forward -n monitoring svc/prometheus-grafana 3000:80
    ```
 2. **Access UI**: Open http://localhost:3000 and login with credentials 
 3. default username=`admin` and password=`prom-operator`

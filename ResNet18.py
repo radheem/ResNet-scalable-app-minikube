@@ -1,11 +1,16 @@
 import torch
-from torchvision import transforms
+from torchvision import transforms, models
 
 class ImageClassifier:
-    def __init__(self, model_name='resnet18', pretrained=True, device=None):
+    def __init__(self, model_name='resnet18', model_path=None,label_path=None,device=None):
         self.device = device if device else ('cuda' if torch.cuda.is_available() else 'cpu')
-        self.model = torch.hub.load('pytorch/vision:v0.10.0', model_name, pretrained=pretrained)
+        if model_path:
+            self.model = models.resnet18()
+            self.model.load_state_dict(torch.load(model_path, map_location='cpu'))
+        else:
+            self.model = torch.hub.load('pytorch/vision:v0.10.0', model_name, pretrained=True)
         self.model.eval()
+        
         self.model.to(self.device)
 
         self.preprocess = transforms.Compose([
@@ -15,22 +20,20 @@ class ImageClassifier:
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 
-        with open("./data/imagenet_classes.txt", "r") as f:
+        with open(label_path, "r") as f:
             self.categories = [s.strip() for s in f.readlines()]
 
     def preprocess_image(self, image):
         input_image = image
         input_tensor = self.preprocess(input_image)
-        input_batch = input_tensor.unsqueeze(0)  # create a mini-batch as expected by the model
+        input_batch = input_tensor.unsqueeze(0) 
         return input_batch
 
     def predict(self, image, topk=5):
         input_batch = self.preprocess_image(image)
         input_batch = input_batch.to(self.device)
-
         with torch.no_grad():
             output = self.model(input_batch)
-
         probabilities = torch.nn.functional.softmax(output[0], dim=0)
         top_prob, top_catid = torch.topk(probabilities, topk)
         

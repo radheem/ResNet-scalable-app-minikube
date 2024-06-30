@@ -1,23 +1,26 @@
 ## Step1: Setup Steps
-1. ``` bash
-    docker build -t resnet18-flask-app:latest .
+1. ```bash
+    python3 scripts/load_model.py
     ```
 2. ``` bash
-    minikube start --driver=docker
+    docker build -t resnet18-flask-app:latest .
     ```
 3. ``` bash
-    minikube image load resnet18-flask-app:latest
+    minikube start --driver=docker
     ```
 4. ``` bash
-    chmod +x scripts/apply-prometheus-crds.sh
+    minikube image load resnet18-flask-app:latest
     ```
 5. ``` bash
-    ./scripts/apply-prometheus-crds.sh
+    chmod +x scripts/apply-prometheus-crds.sh
     ```
 6. ``` bash
+    ./scripts/apply-prometheus-crds.sh
+    ```
+7. ``` bash
     kubectl apply -f deployments/
     ``` 
-7. ```bash 
+8. ```bash 
     minikube tunnel
     ```
 

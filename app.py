@@ -5,7 +5,7 @@ from PIL import Image
 from ResNet18 import ImageClassifier 
 from prometheus_client import Counter, generate_latest, REGISTRY, Summary, Gauge, Histogram
 from prometheus_client.exposition import start_http_server
-from os import environ
+from os import environ, path
 from constants import ALLOWED_EXTENSIONS
 from utils import allowed_file
 
@@ -15,7 +15,9 @@ metrics_port = int(environ.get('METRICS_PORT', 8000))
 
 # Init app and classifier
 app = Flask(__name__)
-classifier = ImageClassifier()
+model_path = path.join(path.dirname(__file__), 'models/resnet18.pth')
+label_path = path.join(path.dirname(__file__), 'data/imagenet_classes.txt')
+classifier = ImageClassifier(model_name='resnet18', model_path=model_path,label_path=label_path)
 
 # Prometheus metrics
 route_hit_counter = Counter('route_hits', 'Count of hits to routes', ['route'])
