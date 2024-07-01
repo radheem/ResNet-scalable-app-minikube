@@ -2,11 +2,11 @@ import torch
 from torchvision import transforms, models
 
 class ImageClassifier:
-    def __init__(self, model_name='resnet18', model_path=None,label_path=None,device=None):
-        self.device = device if device else ('cuda' if torch.cuda.is_available() else 'cpu')
+    def __init__(self, model_name='resnet18', model_path=None, label_path=None):
+        self.device = torch.device('cpu')  # Force to use CPU
         if model_path:
             self.model = models.resnet18()
-            self.model.load_state_dict(torch.load(model_path, map_location='cpu'))
+            self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         else:
             self.model = torch.hub.load('pytorch/vision:v0.10.0', model_name, pretrained=True)
         self.model.eval()
@@ -26,13 +26,11 @@ class ImageClassifier:
     def preprocess_image(self, image):
         input_image = image
         input_tensor = self.preprocess(input_image)
-        print(input_tensor.shape)
-        input_batch = input_tensor.unsqueeze(0) 
+        input_batch = input_tensor.unsqueeze(0).to(self.device)  # Move to device here
         return input_batch
 
     def predict(self, image, topk=5):
         input_batch = self.preprocess_image(image)
-        input_batch = input_batch.to(self.device)
         with torch.no_grad():
             output = self.model(input_batch)
         probabilities = torch.nn.functional.softmax(output[0], dim=0)

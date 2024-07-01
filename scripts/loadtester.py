@@ -43,24 +43,18 @@ class MyLoadTester(BarAzmoon):
     def process_response(self, sent_data_id: str, response: requests.Response):
         try:
             self.request_count += 1
-            response_json = response.json() if isinstance(response, requests.Response) else response
-            print(f"Response: {response_json}")
-            self.successful_count += 1
-            print(f"success percentage: {self.successful_count/self.request_count*100:.2f}%")
-            print(f"failure count: {self.failure_count/self.request_count*100:.2f}%")
+            response_json = response.json() if isinstance(response, requests.Response) else response            
             return True  
         except json.JSONDecodeError:
-            self.failure_count += 1
             print(f"Failed to decode response for data id: {sent_data_id}")
             return False 
 
 
 if __name__ == "__main__":
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    workload = [1]
-    # load_workload(dir_path+'/../data/workload.txt')
+    workload = load_workload(dir_path+'/../data/workload.txt')
     image_folder = dir_path+'/../data/sampleImages'
-    endpoint = 'http://127.0.0.1:5000/predict'
+    endpoint = 'http://127.0.0.1/predict'
 
     tester = MyLoadTester(image_folder, workload, endpoint)
     tester.start()
