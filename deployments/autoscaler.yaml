@@ -19,4 +19,4 @@ spec:
           image: autoscaler:latest
           envFrom:
             - configMapRef:
-                name: autoscaler-config
+                name: autoscaler-configmap
