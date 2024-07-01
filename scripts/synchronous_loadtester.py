@@ -4,7 +4,6 @@ import os
 def upload_image(api_url,image_path):
         with open(image_path, 'rb') as img:
             files = {'image': img}
-            
             response = requests.post(api_url, files=files)
             return response
 
@@ -20,5 +19,5 @@ def post_images(api_url, image_path, batch_size):
 if __name__ == "__main__":
     api_url = "http://127.0.0.1/predict"  
     image_folder = "./data/sampleImages/n01440764_tench.JPEG"
-    batch_size = 200 
+    batch_size = 2000 
     post_images(api_url, image_folder,batch_size)

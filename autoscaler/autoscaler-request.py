@@ -15,11 +15,11 @@ PROMETHEUS_URL = "http://localhost:9090"
 # Configuration
 NAMESPACE = 'default'
 DEPLOYMENT_NAME = 'flask-app'
-LATENCY_THRESHOLD_UP = 0.5  # Latency in seconds to scale up
-LATENCY_THRESHOLD_DOWN = 0.2  # Latency in seconds to scale down
-MIN_REPLICAS = 1
-MAX_REPLICAS = 3
-COOLDOWN_PERIOD = 60  # Time to wait before another scaling action (in seconds)
+LATENCY_THRESHOLD_UP = 0.2  # Latency in seconds to scale up
+LATENCY_THRESHOLD_DOWN = 0.5  # Latency in seconds to scale down
+MIN_REPLICAS = 5
+MAX_REPLICAS = 10
+COOLDOWN_PERIOD = 10  # Time to wait before another scaling action (in seconds)
 MOVING_AVERAGE_DURATION = "1m"  # Duration for moving average
 
 # Set up logging
@@ -52,13 +52,9 @@ def query_prometheus(query):
 def get_metrics():
     # Query for 1-minute moving average latency
     query_latency_avg = (
-        f"avg_over_time("
-        f"  sum by (namespace, pod) ("
-        f"    rate(request_latency_seconds_sum{{endpoint='/predict'}}[{MOVING_AVERAGE_DURATION}])"
+        f"  sum(rate(request_latency_seconds_sum{{endpoint='/predict'}}[{MOVING_AVERAGE_DURATION}]))"
         f"    /"
-        f"    rate(request_latency_seconds_count{{endpoint='/predict'}}[{MOVING_AVERAGE_DURATION}])"
-        f"  )[1m:]"
-        f")"
+        f"  sum(rate(request_latency_seconds_count{{endpoint='/predict'}}[{MOVING_AVERAGE_DURATION}]))"
     )
 
     latency_avg = query_prometheus(query_latency_avg)
