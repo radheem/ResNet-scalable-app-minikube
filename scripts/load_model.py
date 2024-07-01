@@ -1,7 +1,7 @@
 import torch
 from torchvision import models
 
-def save_model(model_path='models/resnet18.pth'):
+def save_model(model_name='resnet18', model_path='models/resnet18.pth'):
     model = models.resnet18(pretrained=True)
     torch.save(model.state_dict(), model_path)
     print(f"Model saved to {model_path}")
