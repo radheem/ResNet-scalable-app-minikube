@@ -57,4 +57,5 @@ if __name__ == "__main__":
     endpoint = 'http://127.0.0.1/predict'
 
     tester = MyLoadTester(image_folder, workload, endpoint)
-    tester.start()
+    total, succ = tester.start()
+    print(f"Total requests: {total}, Successful requests: {succ}, Failed requests: {total - succ}")
