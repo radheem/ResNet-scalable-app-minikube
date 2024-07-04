@@ -1,3 +1,4 @@
+from math import floor
 import sys
 sys.path.append('./submodules/load_tester')
 
@@ -53,9 +54,10 @@ class MyLoadTester(BarAzmoon):
 if __name__ == "__main__":
     dir_path = os.path.dirname(os.path.realpath(__file__))
     workload = load_workload(dir_path+'/../data/workload.txt')
+    workload1 = [floor(i/1.5) for i in workload]
     image_folder = dir_path+'/../data/sampleImages'
     endpoint = 'http://127.0.0.1/predict'
 
-    tester = MyLoadTester(image_folder, workload, endpoint)
+    tester = MyLoadTester(image_folder, workload1, endpoint)
     total, succ = tester.start()
     print(f"Total requests: {total}, Successful requests: {succ}, Failed requests: {total - succ}")

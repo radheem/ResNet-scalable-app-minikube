@@ -154,7 +154,8 @@ class AutoScaler:
 
 if __name__ == "__main__":
     # Initialize AutoScaler with required parameters
-    load_dotenv("../.env")
+    env_path = os.path.join(os.path.dirname(__file__), '../.env')
+    load_dotenv(env_path)
     PROMETHEUS_URL = os.getenv('PROMETHEUS_URL')
     MOVING_AVERAGE_DURATION = os.getenv('MOVING_AVERAGE_DURATION')
     COOLDOWN_PERIOD = int(os.getenv('COOLDOWN_PERIOD'))

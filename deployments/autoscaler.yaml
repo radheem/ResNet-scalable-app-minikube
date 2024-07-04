@@ -17,6 +17,10 @@ spec:
       containers:
         - name: autoscaler
           image: autoscaler:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9090
           envFrom:
             - configMapRef:
-                name: autoscaler-configmap
+                name: autoscaler-configmap.yaml
+                
