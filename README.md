@@ -9,7 +9,7 @@ eval $(minikube docker-env)
 docker build -t resnet18-flask-app:latest .
 ```
 ``` bash
-docker build -t autoscaler:latest -f Dockerfile.CPA 
+docker build -t autoscaler:latest . -f Dockerfile.CPA 
 ```
 ``` bash
 minikube start --driver=docker

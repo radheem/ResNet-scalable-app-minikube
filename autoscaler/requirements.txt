@@ -1,3 +1,5 @@
 kubernetes
 requests
 python-dotenv
+flask
+prometheus_client

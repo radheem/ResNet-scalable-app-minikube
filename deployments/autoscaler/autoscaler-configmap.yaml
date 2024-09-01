@@ -1,9 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: autoscaler-config
+  name: autoscaler-configmap
+  namespace: default
 data:
-  PROMETHEUS_URL: "http://127.0.0.1:9090"
+  PROMETHEUS_URL: "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090" 
   MOVING_AVERAGE_DURATION: "1m"
   COOLDOWN_PERIOD: "30"
   DEPLOYMENT_NAME: "flask-app"
