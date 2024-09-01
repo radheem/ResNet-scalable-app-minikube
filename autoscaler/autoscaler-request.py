@@ -1,12 +1,19 @@
 import time
 import logging
+from flask import Flask
 from kubernetes import client, config
 import requests
 from dotenv import load_dotenv
 import os
+from prometheus_client import Counter, generate_latest, REGISTRY, Summary, Histogram
 # Configure logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+route_hit_counter = Counter('route_hits', 'Count of hits to routes', ['route'],registry=REGISTRY)
+replica_counter = Counter('replica_counter', 'Count of replica', ['deplyment_name'],registry=REGISTRY)
+app = Flask(__name__)
+
 
 class AutoScaler:
     def __init__(self, prometheus_url, moving_average_duration, cooldown_period, deployment_name, namespace, latency_threshold_up, latency_threshold_down, count_threshold, max_replicas, min_replicas, MAX_FAILURES):
@@ -24,8 +31,11 @@ class AutoScaler:
         self.failure_upscale = False
         self.failure_count = 0
 
-        # Initialize Kubernetes client
-        config.load_kube_config()
+        try:
+            config.load_kube_config()
+        except config.ConfigException:
+            config.load_incluster_config()  
+
         self.apps_v1 = client.AppsV1Api()
 
     def query_prometheus(self, query):
@@ -52,9 +62,9 @@ class AutoScaler:
 
     def get_metrics(self):
         try:
-            # Query for 1-minute moving average latency
+            # Query for 1-minute latency
             query_latency_avg = (
-                f"avg_over_time("
+                f"max_over_time("
                 f"  sum by (namespace, pod) ("
                 f"    rate(request_latency_seconds_sum{{endpoint='/predict'}}[{self.MOVING_AVERAGE_DURATION}])"
                 f"    /"
@@ -117,6 +127,7 @@ class AutoScaler:
                     try:
                         deployment = self.apps_v1.read_namespaced_deployment(name=self.DEPLOYMENT_NAME, namespace=self.NAMESPACE)
                         current_replicas = deployment.spec.replicas
+                        replica_counter.labels(deployment_name=self.DEPLOYMENT_NAME).inc(current_replicas)
                         if current_replicas < self.MAX_REPLICAS:
                             new_replicas = min(current_replicas + 1, self.MAX_REPLICAS)
                             logger.info(f"Scaling up due to persistent failures to {new_replicas} replicas")
@@ -152,7 +163,7 @@ class AutoScaler:
 
             time.sleep(self.COOLDOWN_PERIOD)
 
-if __name__ == "__main__":
+def create_autoscaler():
     # Initialize AutoScaler with required parameters
     env_path = os.path.join(os.path.dirname(__file__), '../.env')
     load_dotenv(env_path)
@@ -180,6 +191,21 @@ if __name__ == "__main__":
         min_replicas=MIN_REPLICAS,
         MAX_FAILURES=MAX_FAILURES
     )
-    
-    # Start autoscaling
+    return autoscaler
+
+
+@app.route('/metrics')
+def metrics():
+    route_hit_counter.labels(route='/metrics').inc()
+    return generate_latest(REGISTRY), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+@app.route('/')
+def index():
+    route_hit_counter.labels(route='/').inc()
+    return "<h1>Hello, Hope all good!</h1>"
+
+if __name__ == "__main__":
+    autoscaler = create_autoscaler()    
     autoscaler.autoscale()
+    app.run(host='0.0.0.0', port=3000)
+    
