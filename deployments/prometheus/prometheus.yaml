@@ -1,7 +1,8 @@
 apiVersion: monitoring.coreos.com/v1
 kind: Prometheus
-name: prometheus-config
-namespace: monitoring
+metadata:
+  name: prometheus-config
+  namespace: monitoring
 prometheus:
   prometheusSpec:
     additionalScrapeConfigs:
