@@ -56,7 +56,7 @@ if __name__ == "__main__":
     workload = load_workload(dir_path+'/../data/workload.txt')
     workload1 = [floor(i/1.5) for i in workload]
     image_folder = dir_path+'/../data/sampleImages'
-    endpoint = 'http://127.0.0.1/predict'
+    endpoint = 'http://0.0.0.0:5000/predict'
 
     tester = MyLoadTester(image_folder, workload1, endpoint)
     total, succ = tester.start()

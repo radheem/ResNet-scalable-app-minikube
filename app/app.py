@@ -5,11 +5,17 @@ from uuid import uuid4
 import json
 from os import environ
 import logging
+import base64
 from app.constants import ALLOWED_EXTENSIONS
 
-from postgresConnector import PostgresConnectionManager
-from rabbitmqConnector import RabbitMQConnectionManager
+from app.postgresConnector import PostgresConnectionManager
+from app.rabbitmqConnector import RabbitMQConnectionManager
 
+################
+### PRODUCER ###
+################
+
+# Environment variables for database and RabbitMQ
 db_host = environ.get('DB_HOST', 'localhost')
 db_port = int(environ.get('DB_PORT', 5432))
 db_name = environ.get('DB_NAME', 'resnet18_db')
@@ -18,8 +24,20 @@ db_password = environ.get('DB_PASSWORD', 'password')
 rabbitmq_host = environ.get('RABBITMQ_HOST', 'localhost')
 rabbitmq_queue = environ.get('RABBITMQ_QUEUE', 'requests_queue')
 
+# Initialize Flask app
 app = Flask(__name__)
 
+def initialize_connections():
+    print("Initilizing Connections")
+    """Initialize database and RabbitMQ connections at startup."""
+    try:
+        db_manager.connect()
+        rabbitmq_manager.connect()
+    except Exception as e:
+        logging.error(f"Failed to initialize connections: {e}")
+        raise
+
+# Establish connections to PostgreSQL and RabbitMQ
 db_manager = PostgresConnectionManager(
     host=db_host,
     port=db_port,
@@ -33,6 +51,9 @@ rabbitmq_manager = RabbitMQConnectionManager(
     queue_name=rabbitmq_queue
 )
 
+# Call connection initialization during app startup
+initialize_connections()
+
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
@@ -43,19 +64,22 @@ def predict():
         file = request.files['image']    
         try:
             image = Image.open(io.BytesIO(file.read())) 
+            image_bytes = io.BytesIO()
+            image.save(image_bytes, format=image.format)
+            encoded_image = base64.b64encode(image_bytes.getvalue()).decode('utf-8')  # Base64 encoding
         except Exception as e:
             resp = {'msg': 'Invalid image data', 'hint': f'The image may not be of a valid extension {ALLOWED_EXTENSIONS}', 'error': str(e)}
             return jsonify(resp), 400
         
         request_id = str(uuid4())
-        
+
+        # Insert request into PostgreSQL database
         db_manager.execute_query(
-            "INSERT INTO requests (id, status, label) VALUES (%s, %s)",
+            "INSERT INTO requests (id, status, label) VALUES (%s, %s, %s)",
             (request_id, 'PENDING', None)
         )
-
-        rabbitmq_manager.publish_message(json.dumps({'id': request_id, 'image': image}))
-
+        # Publish message to RabbitMQ
+        rabbitmq_manager.publish_message(json.dumps({'id': request_id, 'image': encoded_image}))
         return jsonify({'id': request_id}), 200
 
     except Exception as e:
@@ -81,7 +105,6 @@ def get_prediction():
     except Exception as e:
         logging.error(f"Error occurred: {e}")
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/health')
 def health():

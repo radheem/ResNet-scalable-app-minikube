@@ -49,7 +49,11 @@ class PostgresConnectionManager:
             with conn.cursor() as cursor:
                 cursor.execute(query, params)
                 conn.commit()
-                return cursor.fetchall()
+                # If the query is a SELECT statement, fetch results
+                if query.strip().upper().startswith("SELECT"):
+                    return cursor.fetchall()
+                else:
+                    return None  # No results to fetch for INSERT, UPDATE, DELETE
         except (OperationalError, InterfaceError) as e:
             logging.warning(f"Connection error during query execution: {e}. Reconnecting.")
             self.connect()
@@ -58,6 +62,7 @@ class PostgresConnectionManager:
             logging.error(f"Database error: {e}")
             conn.rollback()
             raise e
+
 
     def close(self):
         if self.connection and not self.connection.closed:
