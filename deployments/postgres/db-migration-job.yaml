@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migration-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: migration
+        image: postgres:13
+        command: [ "sh", "-c", "PGPASSWORD=$POSTGRES_PASSWORD psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f /migrations/migration.sql" ]
+        env:
+        - name: DB_HOST
+          value: "postgres-service"
+        - name: DB_USER
+          value: "postgres"
+        - name: DB_NAME
+          value: "resnet18_db"
+        - name: POSTGRES_PASSWORD
+          value: "password"
+        volumeMounts:
+        - name: migrations
+          mountPath: /migrations
+      restartPolicy: OnFailure
+      volumes:
+      - name: migrations
+        configMap:
+          name: migration-sql-configmap
+
+---
+
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: migration-sql-configmap
+data:
+  migration.sql: |
+    CREATE TABLE requests (
+      id VARCHAR(255) PRIMARY KEY,
+      status VARCHAR(50),
+      label VARCHAR(255)
+    );

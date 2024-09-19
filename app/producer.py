@@ -1,13 +1,16 @@
 import io
 from PIL import Image
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, g
 from uuid import uuid4
 import json
-from os import environ
+import time
 import logging
 import base64
-from app.constants import ALLOWED_EXTENSIONS
+from os import environ
+from prometheus_client import Counter, generate_latest, REGISTRY, Summary, Histogram
+from prometheus_client.exposition import start_http_server
 
+from app.constants import ALLOWED_EXTENSIONS
 from app.postgresConnector import PostgresConnectionManager
 from app.rabbitmqConnector import RabbitMQConnectionManager
 
@@ -24,8 +27,25 @@ db_password = environ.get('DB_PASSWORD', 'password')
 rabbitmq_host = environ.get('RABBITMQ_HOST', 'localhost')
 rabbitmq_queue = environ.get('RABBITMQ_QUEUE', 'requests_queue')
 
+# Prometheus metrics
+route_hit_counter = Counter('route_hits', 'Count of hits to routes', ['route'])
+REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request', registry=REGISTRY)
+REQUEST_COUNT = Counter('request_count', 'Total number of requests', ['method', 'endpoint', 'http_status'], registry=REGISTRY)
+REQUEST_LATENCY = Histogram('request_latency_seconds', 'Request latency', ['method', 'endpoint'], registry=REGISTRY)
+
 # Initialize Flask app
 app = Flask(__name__)
+
+@app.before_request
+def before_request():
+    g.start_time = time.time()
+
+@app.after_request
+def after_request(response):
+    latency = time.time() - g.start_time
+    REQUEST_LATENCY.labels(request.method, request.path).observe(latency)
+    REQUEST_COUNT.labels(request.method, request.path, response.status_code).inc()
+    return response
 
 def initialize_connections():
     print("Initilizing Connections")
@@ -55,7 +75,9 @@ rabbitmq_manager = RabbitMQConnectionManager(
 initialize_connections()
 
 @app.route('/predict', methods=['POST'])
+@REQUEST_TIME.time()
 def predict():
+    route_hit_counter.labels(route='/predict').inc()
     try:
         resp = {'msg': 'Image not found in request', 'hint': 'Add the image to a key named "image"'}
         if 'image' not in request.files:
@@ -87,7 +109,9 @@ def predict():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/predict', methods=['GET'])
+@REQUEST_TIME.time()
 def get_prediction():
+    route_hit_counter.labels(route='/predict').inc()
     try:
         request_id = request.args.get('id')
         if not request_id:
@@ -108,7 +132,17 @@ def get_prediction():
 
 @app.route('/health')
 def health():
+    route_hit_counter.labels(route='/health').inc()
     return "OK", 200
 
+@app.route('/metrics')
+def metrics():
+    route_hit_counter.labels(route='/metrics').inc()
+    return generate_latest(REGISTRY), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+def start_metrics_server():
+    start_http_server(8000)
+
 if __name__ == '__main__':
+    start_metrics_server()  # Start the Prometheus metrics server
     app.run(host='0.0.0.0', port=5001)

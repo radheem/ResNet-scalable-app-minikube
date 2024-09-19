@@ -5,7 +5,7 @@ ENV METRICS_PORT 8000
 
 WORKDIR /app
 
-COPY requirements.txt requirements.txt
+COPY ./docker/producer/requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
 COPY . .

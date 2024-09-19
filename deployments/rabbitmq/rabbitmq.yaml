@@ -18,11 +18,23 @@ spec:
       - name: rabbitmq
         image: rabbitmq:3-management
         ports:
-        - containerPort: 5672 
-        - containerPort: 15672 
+        - containerPort: 5672   # AMQP Port
+        - containerPort: 15672  # Management UI Port
         volumeMounts:
         - name: rabbitmq-storage
           mountPath: /var/lib/rabbitmq
+        livenessProbe:
+          httpGet:
+            path: /api/healthchecks/node
+            port: 15672
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/healthchecks/node
+            port: 15672
+          initialDelaySeconds: 30
+          periodSeconds: 15
       volumes:
       - name: rabbitmq-storage
         persistentVolumeClaim:
@@ -43,7 +55,7 @@ spec:
     name: management
   selector:
     app: rabbitmq
-  type: NodePort
+  type: ClusterIP   # Changed to ClusterIP for internal communication
 
 ---
 apiVersion: v1
@@ -55,7 +67,7 @@ spec:
     storage: 1Gi
   accessModes:
     - ReadWriteOnce
-  hostPath:
+  hostPath:  # Note: This is specific to a node. Consider using dynamic provisioning in production.
     path: /mnt/data/rabbitmq
 
 ---
