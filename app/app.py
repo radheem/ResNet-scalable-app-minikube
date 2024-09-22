@@ -173,7 +173,7 @@ def start_metrics_server():
     start_http_server(8000)
 
 if __name__ == '__main__':
-    # start_metrics_server()  # Start the Prometheus metrics server
+    start_metrics_server()  # Start the Prometheus metrics server
     with app.app_context():
         db.create_all()    
     migrate = Migrate(app, db)
