@@ -1,28 +1,27 @@
 import io
 from PIL import Image
-from flask import Flask, request, jsonify, g
+from flask import Flask, redirect, request, jsonify, g, render_template
 from uuid import uuid4
 import json
 import time
 import logging
 import base64
 from os import environ
+from models import db, ClassificationRequest
 from prometheus_client import Counter, generate_latest, REGISTRY, Summary, Histogram
 from prometheus_client.exposition import start_http_server
 
-from app.constants import ALLOWED_EXTENSIONS
-from app.postgresConnector import PostgresConnectionManager
-from app.rabbitmqConnector import RabbitMQConnectionManager
+from constants import ALLOWED_EXTENSIONS
+from postgresConnector import PostgresConnectionManager
+from rabbitmqConnector import RabbitMQConnectionManager
+from flask_migrate import Migrate
 
-################
-### PRODUCER ###
-################
 
 # Environment variables for database and RabbitMQ
 db_host = environ.get('DB_HOST', 'localhost')
 db_port = int(environ.get('DB_PORT', 5432))
 db_name = environ.get('DB_NAME', 'resnet18_db')
-db_user = environ.get('DB_USER', 'postgres')
+db_user = environ.get('DB_USER', 'root')
 db_password = environ.get('DB_PASSWORD', 'password')
 rabbitmq_host = environ.get('RABBITMQ_HOST', 'localhost')
 rabbitmq_queue = environ.get('RABBITMQ_QUEUE', 'requests_queue')
@@ -35,6 +34,10 @@ REQUEST_LATENCY = Histogram('request_latency_seconds', 'Request latency', ['meth
 
 # Initialize Flask app
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
 
 @app.before_request
 def before_request():
@@ -48,11 +51,12 @@ def after_request(response):
     return response
 
 def initialize_connections():
-    print("Initilizing Connections")
     """Initialize database and RabbitMQ connections at startup."""
+    logging.info("Initializing connections...")
     try:
         db_manager.connect()
         rabbitmq_manager.connect()
+        logging.info("Connections established successfully.")
     except Exception as e:
         logging.error(f"Failed to initialize connections: {e}")
         raise
@@ -86,23 +90,36 @@ def predict():
         file = request.files['image']    
         try:
             image = Image.open(io.BytesIO(file.read())) 
+            if image.format.lower() not in ALLOWED_EXTENSIONS:
+                raise ValueError(f"Invalid image format: {image.format}")
+            
             image_bytes = io.BytesIO()
             image.save(image_bytes, format=image.format)
-            encoded_image = base64.b64encode(image_bytes.getvalue()).decode('utf-8')  # Base64 encoding
+            encoded_image = base64.b64encode(image_bytes.getvalue()).decode('utf-8')
         except Exception as e:
             resp = {'msg': 'Invalid image data', 'hint': f'The image may not be of a valid extension {ALLOWED_EXTENSIONS}', 'error': str(e)}
             return jsonify(resp), 400
         
-        request_id = str(uuid4())
-
         # Insert request into PostgreSQL database
-        db_manager.execute_query(
-            "INSERT INTO requests (id, status, label) VALUES (%s, %s, %s)",
-            (request_id, 'PENDING', None)
-        )
+        try:
+            record = ClassificationRequest(status='PENDING', label=None)
+            db.session.add(record)
+            db.session.commit()
+            request_id = record.id
+        except Exception as db_error:
+            db.session.rollback()
+            logging.error(f"Failed to save classification request to the database: {db_error}")
+            return jsonify({'msg': 'Database error occurred', 'error': str(db_error)}), 500
+
         # Publish message to RabbitMQ
-        rabbitmq_manager.publish_message(json.dumps({'id': request_id, 'image': encoded_image}))
-        return jsonify({'id': request_id}), 200
+        try:
+            msg = {'id': request_id, 'image': encoded_image} 
+            rabbitmq_manager.publish_message(json.dumps(msg))
+        except Exception as rabbitmq_error:
+            logging.error(f"Failed to publish message to RabbitMQ: {rabbitmq_error}")
+            return jsonify({'msg': 'Failed to publish message to RabbitMQ', 'error': str(rabbitmq_error)}), 500
+        
+        return jsonify({'msg': 'Prediction request received', 'request_id': request_id}), 200
 
     except Exception as e:
         logging.error(f"Error occurred: {e}")
@@ -117,18 +134,30 @@ def get_prediction():
         if not request_id:
             return jsonify({'msg': 'Request ID not found in query parameters', 'hint': 'Add the request ID to the query parameter "id"'}), 400
         
-        result = db_manager.execute_query(
-            "SELECT * FROM requests WHERE id = %s",
-            (request_id,)
-        )
+        # Query the database for prediction status
+        try:
+            result = db_manager.execute_query(
+                "SELECT id, status, label FROM classification_requests WHERE id = %s",
+                (request_id,)
+            )
+        except Exception as query_error:
+            logging.error(f"Error querying database: {query_error}")
+            return jsonify({'msg': 'Database query failed', 'error': str(query_error)}), 500
+        
         if not result:
             return jsonify({'msg': 'Request ID not found', 'hint': 'Check the request ID and try again'}), 404
         
-        return jsonify({'id': result[0], 'status': result[1], 'label': result[2]}), 200
+        return jsonify({'id': result[0][0], 'status': result[0][1], 'label': result[0][2]}), 200
 
     except Exception as e:
         logging.error(f"Error occurred: {e}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/')
+@REQUEST_TIME.time()
+def index():
+    route_hit_counter.labels(route='/').inc()
+    return render_template('index.html')
 
 @app.route('/health')
 def health():
@@ -144,5 +173,9 @@ def start_metrics_server():
     start_http_server(8000)
 
 if __name__ == '__main__':
-    start_metrics_server()  # Start the Prometheus metrics server
-    app.run(host='0.0.0.0', port=5001)
+    # start_metrics_server()  # Start the Prometheus metrics server
+    with app.app_context():
+        db.create_all()    
+    migrate = Migrate(app, db)
+    app.run(host='0.0.0.0', port=5001, debug=True)  # Start the Flask app
+    

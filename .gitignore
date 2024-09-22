@@ -1,6 +1,6 @@
 # project-folders
 data/sampleImages/
-
+.env
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

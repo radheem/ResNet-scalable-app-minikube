@@ -22,7 +22,7 @@ spec:
         - name: POSTGRES_DB
           value: "resnet18_db"
         - name: POSTGRES_USER
-          value: "postgres" 
+          value: "root" 
         - name: POSTGRES_PASSWORD
           value: "password"
         volumeMounts:

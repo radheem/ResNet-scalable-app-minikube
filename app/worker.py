@@ -6,7 +6,6 @@ from app.classifier import ImageClassifier
 from prometheus_client import Counter, generate_latest, REGISTRY, Summary, Histogram
 from prometheus_client.exposition import start_http_server
 from os import environ, path
-from app.constants import ALLOWED_EXTENSIONS
 import pika
 import psycopg2
 

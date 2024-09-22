@@ -9,15 +9,11 @@ from postgresConnector import PostgresConnectionManager
 from classifier import ImageClassifier
 from os import environ, path
 
-################
-### CONSUMER ###
-################
-
 # Load environment variables
 db_host = environ.get('DB_HOST', 'localhost')
 db_port = int(environ.get('DB_PORT', 5432))
 db_name = environ.get('DB_NAME', 'resnet18_db')
-db_user = environ.get('DB_USER', 'postgres')
+db_user = environ.get('DB_USER', 'root')
 db_password = environ.get('DB_PASSWORD', 'password')
 rabbitmq_host = environ.get('RABBITMQ_HOST', 'localhost')
 rabbitmq_queue = environ.get('RABBITMQ_QUEUE', 'requests_queue')
@@ -105,11 +101,12 @@ def callback(ch, method, properties, body):
         # Classify image
         results = classifier.predict(image, topk=1)
         label = results[0][0]
+        confidence = results[0][1]  
         
         # Update the database with the label
         db_manager.execute_query(
-            "UPDATE requests SET status = %s, label = %s WHERE id = %s",
-            ('PROCESSED', label, request_id)
+            "UPDATE classification_requests SET status = %s, label = %s, confidence = %s WHERE id = %s",
+            ('PROCESSED', label, confidence, request_id)
         )
         
         logging.info(f"Processed request ID {request_id} with label {label}")
