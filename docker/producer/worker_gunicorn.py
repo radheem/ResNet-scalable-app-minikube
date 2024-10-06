@@ -1,5 +1,5 @@
 from gunicorn.app.base import BaseApplication
-from app.producer import app  
+from producer import app  
 from os import environ
 import torch.multiprocessing as mp
 

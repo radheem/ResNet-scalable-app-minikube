@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: flask-app
+  name: worker-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: flask-app
+      app: worker-app
   template:
     metadata:
       labels:
-        app: flask-app
+        app: worker-app
       annotations:
         prometheus.io/scrape: 'true'
         prometheus.io/port: '5000'
@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: worker-app
-        image: gunicorn-app:latest
+        image: worker-app:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5000
@@ -40,16 +40,35 @@ spec:
           value: "5000"
         - name: METRICS_PORT
           value: "8000"
+        - name: DB_NAME
+          value: "resnet18_db"
+        - name: DB_USER
+          value: "root"
+        - name: DB_PASSWORD
+          value: "password"
+        - name: DB_HOST
+          value: "postgres-service"
+        - name: DB_PORT
+          value: "5432"
+        - name: RABBITMQ_HOST        
+          value: "rabbitmq"
+        - name: RABBITMQ_QUEUE
+          value: "requests_queue"
+        - name: RABBITMQ_USERNAME
+          value: "admin" 
+        - name: RABBITMQ_PASSWORD
+          value: "admin"  
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: flask-app-service
+  name: worker-apps
 spec:
   type: LoadBalancer
   selector:
     app: flask-app
   ports:
     - protocol: TCP
-      port: 80
+      port: 5001
       targetPort: 5000

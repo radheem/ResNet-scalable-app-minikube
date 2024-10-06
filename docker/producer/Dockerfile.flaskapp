@@ -1,0 +1,23 @@
+FROM python:3.8-slim
+
+WORKDIR /app
+
+COPY ./docker/producer/requirements.txt requirements.txt
+RUN pip install -r requirements.txt
+
+COPY . .
+
+# Copy the consumer code
+COPY ../app/app.py ./app.py
+COPY ../app/postgresConnector.py ./postgresConnector.py
+COPY ../app/rabbitmqConnector.py ./rabbitmqConnector.py
+COPY ../app/models.py ./models.py
+COPY ../app/constants.py ./constants.py
+COPY ../app/utils.py ./utils.py
+COPY ../app/templates ./templates
+
+
+
+EXPOSE 5000
+
+CMD ["python", "app.py"]

@@ -3,19 +3,22 @@ import logging
 from time import sleep
 
 class RabbitMQConnectionManager:
-    def __init__(self, host, queue_name, max_retries=5, retry_delay=2):
+    def __init__(self, host, queue_name, max_retries=5, retry_delay=2,rabbitmq_username="guest", rabbitmq_password="guest"):
         self.host = host
         self.queue_name = queue_name
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self.connection = None
         self.channel = None
+        print('rabbit mq creds: ${rabbitmq_username},${rabbitmq_password}')
+        self.credentials = pika.PlainCredentials(rabbitmq_username, rabbitmq_password)
+        self.parameters = pika.ConnectionParameters(host=self.host, credentials=self.credentials)
 
     def connect(self):
         retries = 0
         while retries < self.max_retries:
             try:
-                self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host))
+                self.connection = pika.BlockingConnection(parameters=self.parameters)
                 self.channel = self.connection.channel()
                 self.channel.queue_declare(queue=self.queue_name, durable=True)
                 logging.info("Successfully connected to RabbitMQ")

@@ -6,7 +6,7 @@ python3 scripts/load_model.py
 eval $(minikube docker-env)
 ```
 ``` bash
-docker build -t resnet18-flask-app:latest .
+docker build -t flask-app:latest .
 ```
 ``` bash
 docker build -t autoscaler:latest . -f Dockerfile.CPA 

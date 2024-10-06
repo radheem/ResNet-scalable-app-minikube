@@ -25,7 +25,8 @@ db_user = environ.get('DB_USER', 'root')
 db_password = environ.get('DB_PASSWORD', 'password')
 rabbitmq_host = environ.get('RABBITMQ_HOST', 'localhost')
 rabbitmq_queue = environ.get('RABBITMQ_QUEUE', 'requests_queue')
-
+rabbitmq_username = environ.get('RABBITMQ_USERNAME', 'flask')   
+rabbitmq_password = environ.get('RABBITMQ_PASSWORD', 'flask')
 # Prometheus metrics
 route_hit_counter = Counter('route_hits', 'Count of hits to routes', ['route'])
 REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request', registry=REGISTRY)
@@ -72,7 +73,9 @@ db_manager = PostgresConnectionManager(
 
 rabbitmq_manager = RabbitMQConnectionManager(
     host=rabbitmq_host,
-    queue_name=rabbitmq_queue
+    queue_name=rabbitmq_queue,
+    rabbitmq_username=rabbitmq_username,
+    rabbitmq_password=rabbitmq_password
 )
 
 # Call connection initialization during app startup
@@ -177,5 +180,5 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()    
     migrate = Migrate(app, db)
-    app.run(host='0.0.0.0', port=5001, debug=True)  # Start the Flask app
+    app.run(host='0.0.0.0', port=5001)  # Start the Flask app
     
