@@ -49,9 +49,9 @@ spec:
           mountPath: /var/lib/rabbitmq  
         env:
         - name: RABBITMQ_DEFAULT_USER
-          value: "admin"  
+          value: "guest"  
         - name: RABBITMQ_DEFAULT_PASS
-          value: "admin"  
+          value: "guest"  
         - name: RABBITMQ_USERS
           value: "flask:flask:administrator"  
 

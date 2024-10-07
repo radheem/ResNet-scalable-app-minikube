@@ -55,9 +55,9 @@ spec:
         - name: RABBITMQ_QUEUE
           value: "requests_queue"
         - name: RABBITMQ_USERNAME
-          value: "flask" 
+          value: "guest" 
         - name: RABBITMQ_PASSWORD
-          value: "flask"  
+          value: "guest"  
 ---
 apiVersion: v1
 kind: Service
@@ -69,5 +69,5 @@ spec:
     app: flask-app
   ports:
     - protocol: TCP
-      port: 80
+      port: 5000
       targetPort: 5000

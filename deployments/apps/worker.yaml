@@ -55,9 +55,9 @@ spec:
         - name: RABBITMQ_QUEUE
           value: "requests_queue"
         - name: RABBITMQ_USERNAME
-          value: "admin" 
+          value: "guest" 
         - name: RABBITMQ_PASSWORD
-          value: "admin"  
+          value: "guest"  
 
 ---
 apiVersion: v1
