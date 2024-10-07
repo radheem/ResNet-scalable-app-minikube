@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <h1>Classification Results</h1>
+    
+    <!-- Table for displaying data -->
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Label</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in data['data'] %}
+                <tr>
+                    <td>{{ record['id'] }}</td>
+                    <td>{{ record['label'] }}</td>
+                    <td>{{ record['status'] }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination Controls -->
+    <div class="pagination">
+        <!-- Previous Button on the left -->
+        {% if data['prev_cursor'] and data['prev_cursor'] > 0 %}
+            <a href="{{ url_for('get_prediction', cursor=data['prev_cursor'], limit=data['limit'], sort_by=data['sort_by'], order=data['order']) }}">
+                <button>Previous</button>
+            </a>
+        {% endif %}
+        
+        <!-- Next Button on the right -->
+        {% if data['has_more'] %}
+            <a href="{{ url_for('get_prediction', cursor=data['cursor'], limit=data['limit'], sort_by=data['sort_by'], order=data['order']) }}">
+                <button>Next</button>
+            </a>
+        {% endif %}
+    </div>
+    
+</body>
+</html>

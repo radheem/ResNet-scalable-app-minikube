@@ -1,7 +1,6 @@
 import io
 from PIL import Image
 from flask import Flask, redirect, request, jsonify, g, render_template
-from uuid import uuid4
 import json
 import time
 import logging
@@ -25,8 +24,8 @@ db_user = environ.get('DB_USER', 'root')
 db_password = environ.get('DB_PASSWORD', 'password')
 rabbitmq_host = environ.get('RABBITMQ_HOST', 'localhost')
 rabbitmq_queue = environ.get('RABBITMQ_QUEUE', 'requests_queue')
-rabbitmq_username = environ.get('RABBITMQ_USERNAME', 'flask')   
-rabbitmq_password = environ.get('RABBITMQ_PASSWORD', 'flask')
+rabbitmq_username = environ.get('RABBITMQ_USERNAME', 'guest')   
+rabbitmq_password = environ.get('RABBITMQ_PASSWORD', 'guest')
 # Prometheus metrics
 route_hit_counter = Counter('route_hits', 'Count of hits to routes', ['route'])
 REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request', registry=REGISTRY)
@@ -121,36 +120,68 @@ def predict():
         except Exception as rabbitmq_error:
             logging.error(f"Failed to publish message to RabbitMQ: {rabbitmq_error}")
             return jsonify({'msg': 'Failed to publish message to RabbitMQ', 'error': str(rabbitmq_error)}), 500
-        
-        return jsonify({'msg': 'Prediction request received', 'request_id': request_id}), 200
+        data = {'msg': 'Prediction request received', 'request_id': request_id}
+        return render_template('result.html', data=data)
 
     except Exception as e:
         logging.error(f"Error occurred: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/predict', methods=['GET'])
+@app.route('/results', methods=['GET'])
 @REQUEST_TIME.time()
 def get_prediction():
-    route_hit_counter.labels(route='/predict').inc()
+    route_hit_counter.labels(route='/results').inc()
     try:
+        route_hit_counter.labels(route='/results').inc()
+        # If request ID is provided, return the result for that ID
         request_id = request.args.get('id')
-        if not request_id:
-            return jsonify({'msg': 'Request ID not found in query parameters', 'hint': 'Add the request ID to the query parameter "id"'}), 400
-        
-        # Query the database for prediction status
-        try:
+        if request_id:
+            print(f"request_id: {request_id}")
             result = db_manager.execute_query(
                 "SELECT id, status, label FROM classification_requests WHERE id = %s",
                 (request_id,)
             )
-        except Exception as query_error:
-            logging.error(f"Error querying database: {query_error}")
-            return jsonify({'msg': 'Database query failed', 'error': str(query_error)}), 500
+            if not result:
+                return jsonify({'msg': 'Request ID not found', 'hint': 'Check the request ID and try again'}), 404
+            return jsonify({'id': result[0][0], 'status': result[0][1], 'label': result[0][2]}), 200
         
-        if not result:
-            return jsonify({'msg': 'Request ID not found', 'hint': 'Check the request ID and try again'}), 404
+        start = int(request.args.get('cursor', 0))
+        limit = int(request.args.get('limit', 4))
+        sort_by = request.args.get('sort_by', 'id')
+        order = request.args.get('order', 'asc').lower()
+        print(f"here")
+        print(f"start: {start}, limit: {limit}, sort_by: {sort_by}, order: {order}")
+        order_clause = 'ASC' if order == 'asc' else 'DESC'
+        allowed_sort_fields = ['id', 'status', 'label']
         
-        return jsonify({'id': result[0][0], 'status': result[0][1], 'label': result[0][2]}), 200
+        if sort_by not in allowed_sort_fields:
+            return jsonify({'msg': f'Invalid sort field: {sort_by}', 'allowed_fields': allowed_sort_fields}), 400
+
+        query = f"""
+            SELECT id, status, label 
+            FROM classification_requests
+            WHERE id > %s
+            ORDER BY {sort_by} {order_clause}
+            LIMIT %s
+        """
+        results = db_manager.execute_query(query, (start, limit))
+
+        data = [{'id': row[0], 'status': row[1], 'label': row[2]} for row in results]
+        
+        # Check if there is more data by getting the next record
+        has_more = len(data) == limit
+        next_cursor = data[-1]['id'] if has_more else None
+
+        response = {
+            'data': data,
+            'limit': limit,
+            'sort_by': sort_by,
+            'order': order,
+            'cursor': next_cursor,
+            'prev_cursor': start-limit if int(start-limit) > 0 else 0,
+            'has_more': has_more
+        }
+        return render_template('results.html', data=response)
 
     except Exception as e:
         logging.error(f"Error occurred: {e}")
@@ -176,9 +207,9 @@ def start_metrics_server():
     start_http_server(8000)
 
 if __name__ == '__main__':
-    start_metrics_server()  # Start the Prometheus metrics server
+    # start_metrics_server()  # Start the Prometheus metrics server
     with app.app_context():
         db.create_all()    
     migrate = Migrate(app, db)
-    app.run(host='0.0.0.0', port=5000)  # Start the Flask app
+    app.run(host='0.0.0.0', port=5000, debug=True)  # Start the Flask app
     

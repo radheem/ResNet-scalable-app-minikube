@@ -4,32 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Upload</title>
-    <style>
-        #drop-area {
-            border: 2px dashed #ccc;
-            border-radius: 20px;
-            width: 300px;
-            height: 200px;
-            text-align: center;
-            padding: 20px;
-            margin: 20px auto;
-            transition: background-color 0.3s;
-        }
-        #drop-area.hover {
-            background-color: #f0f0f0;
-        }
-        #fileElem {
-            display: none;
-        }
-        #upload-button {
-            display: block;
-            margin: 0 auto;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
     <h1>Upload an Image</h1>
-    <form action="/predict" method="post" enctype="multipart/form-data">
+    <form action="/predict" method="post" enctype="multipart/form-data" id="upload-form">
         <div id="drop-area">
             <p>Drag and drop an image here</p>
             <p>or</p>
@@ -38,50 +17,11 @@
         </div>
         <button type="submit" id="upload-button">Upload</button>
     </form>
+    <div id="preview-area" style="display: none;">
+        <p id="file-info"></p>
+        <img id="preview-image" alt="Uploaded image preview" />
+    </div>
 
-    <script>
-        const dropArea = document.getElementById('drop-area');
-        const fileInput = document.getElementById('fileElem');
-
-        // Prevent default drag behaviors
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        });
-
-        // Highlight drop area when item is dragged over it
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropArea.addEventListener(eventName, () => dropArea.classList.add('hover'), false);
-        });
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropArea.addEventListener(eventName, () => dropArea.classList.remove('hover'), false);
-        });
-
-        // Handle dropped files
-        dropArea.addEventListener('drop', handleDrop, false);
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-
-            handleFiles(files);
-        }
-
-        function handleFiles(files) {
-            if (files.length > 0) {
-                fileInput.files = files; // Set the file input to the dropped files
-            }
-        }
-
-        // Open file selector when drag area is clicked
-        dropArea.addEventListener('click', () => {
-            fileInput.click();
-        });
-    </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

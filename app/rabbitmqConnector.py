@@ -10,7 +10,7 @@ class RabbitMQConnectionManager:
         self.retry_delay = retry_delay
         self.connection = None
         self.channel = None
-        print('rabbit mq creds: ${rabbitmq_username},${rabbitmq_password}')
+        print('rabbit mq creds: {},{}'.format(rabbitmq_username, rabbitmq_password))
         self.credentials = pika.PlainCredentials(rabbitmq_username, rabbitmq_password)
         self.parameters = pika.ConnectionParameters(host=self.host, credentials=self.credentials)
 
