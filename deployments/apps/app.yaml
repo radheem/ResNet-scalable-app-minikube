@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: flask-app
-        image: gunicorn-app:latest
+        image: flask-app:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5000
@@ -40,6 +40,24 @@ spec:
           value: "5000"
         - name: METRICS_PORT
           value: "8000"
+        - name: DB_NAME
+          value: "resnet18_db"
+        - name: DB_USER
+          value: "root"
+        - name: DB_PASSWORD
+          value: "password"
+        - name: DB_HOST
+          value: "postgres-service"
+        - name: DB_PORT
+          value: "5432"
+        - name: RABBITMQ_HOST        
+          value: "rabbitmq"
+        - name: RABBITMQ_QUEUE
+          value: "requests_queue"
+        - name: RABBITMQ_USERNAME
+          value: "guest" 
+        - name: RABBITMQ_PASSWORD
+          value: "guest"  
 ---
 apiVersion: v1
 kind: Service
@@ -51,18 +69,5 @@ spec:
     app: flask-app
   ports:
     - protocol: TCP
-      port: 80
+      port: 5000
       targetPort: 5000
----
-apiVersion: autoscaling/v1
-kind: HorizontalPodAutoscaler
-metadata:
-  name: flask-app-hpa
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: flask-app
-  minReplicas: 1
-  maxReplicas: 8
-  targetCPUUtilizationPercentage: 90

@@ -1,0 +1,26 @@
+FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install
+COPY ./docker/consumer/requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+
+# Copy the consumer code
+COPY ../app/postgresConnector.py ./postgresConnector.py
+COPY ../app/rabbitmqConnector.py ./rabbitmqConnector.py
+COPY ../app/consumer.py ./consumer.py
+COPY ../app/models.py ./models.py
+COPY ../app/classifier.py ./classifier.py
+COPY ../app/constants.py ./constants.py
+COPY ../app/utils.py ./utils.py
+COPY ../models ../models
+COPY ../data ../data
+
+
+
+
+# Set the entry point
+CMD ["python", "consumer.py"]

@@ -1,9 +1,0 @@
-flask
-redis
-prometheus_client
-torch
-torchvision
-Pillow
-requests
-aiohttp
-gunicorn

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Classifier</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <h1>Image Classification Service</h1>
+    <form action="/predict" method="post" enctype="multipart/form-data" id="upload-form">
+        <div id="drop-area">
+            <p>Drag and drop an image here</p>
+            <p>or</p>
+            <input type="file" id="fileElem" name="image" accept="image/*" required>
+            <label for="fileElem">Select a file</label>
+        </div>
+        
+        <!-- Upload Button -->
+        <button type="submit" id="upload-button">Upload</button>
+        
+        <!-- Previous Results Button -->
+        <button type="button" id="previous-results-button" onclick="window.location.href='/results'">Previous Results</button>
+    </form>
+
+    <div id="preview-area" style="display: none;">
+        <p id="file-info"></p>
+        <img id="preview-image" alt="Uploaded image preview" />
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

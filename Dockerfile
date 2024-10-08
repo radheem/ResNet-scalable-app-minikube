@@ -1,15 +1,18 @@
+# Use the official Python image
 FROM python:3.8-slim
 
-ENV PORT 5000
-ENV METRICS_PORT 8000
-
+# Set the working directory
 WORKDIR /app
 
+# Copy requirements file and install dependencies
 COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy the application code
+COPY testapp.py testapp.py
 
+# Expose port 5000 for the Flask app
 EXPOSE 5000
 
-CMD ["python", "run_gunicorn.py"]
+# Command to run the Flask app
+CMD ["python", "testapp.py"]
