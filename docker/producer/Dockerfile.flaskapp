@@ -15,6 +15,7 @@ COPY ../app/models.py ./models.py
 COPY ../app/constants.py ./constants.py
 COPY ../app/utils.py ./utils.py
 COPY ../app/templates ./templates
+COPY ../app/static ./static 
 
 
 

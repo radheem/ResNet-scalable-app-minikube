@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Processing Image</title>
+    <title>Status</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/processing.css') }}">
 </head>
 <body>
     <div id="processing-container">
-        <h1>Image Submitted</h1>
-        <p>Once processed the status will appear on the homepage</p>
+        <h1>{{ data['header'] }}</h1>
+        <p>{{ data['msg'] }}</p>
         <button id="return-button" onclick="window.location.href='/'">Go Back</button>
     </div>
 </body>

@@ -35,7 +35,7 @@ function handleDrop(e) {
 
 function handleFiles(files) {
     if (files.length > 0) {
-        fileInput.files = files; // Set the file input to the dropped files
+        fileInput.files = files;
         displayPreview(files[0]);
     }
 }
@@ -53,19 +53,15 @@ fileInput.addEventListener('change', () => {
 });
 
 function displayPreview(file) {
-    // Hide drop area and keep the upload button visible
     dropArea.style.display = 'none';
 
-    // Display file name and size
     fileInfo.textContent = `File: ${file.name}, Size: ${Math.round(file.size / 1024)} KB`;
 
-    // Display image preview
     const reader = new FileReader();
     reader.onload = (e) => {
         previewImage.src = e.target.result;
     };
     reader.readAsDataURL(file);
 
-    // Show preview area
     previewArea.style.display = 'block';
 }

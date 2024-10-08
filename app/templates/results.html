@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Results</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/results.css">
 </head>
 <body>
     <h1>Classification Results</h1>
@@ -32,19 +32,21 @@
     <!-- Pagination Controls -->
     <div class="pagination">
         <!-- Previous Button on the left -->
-        {% if data['prev_cursor'] and data['prev_cursor'] > 0 %}
-            <a href="{{ url_for('get_prediction', cursor=data['prev_cursor'], limit=data['limit'], sort_by=data['sort_by'], order=data['order']) }}">
-                <button>Previous</button>
-            </a>
-        {% endif %}
+        <a href="{{ url_for('get_prediction', cursor=data['prev_cursor']-data['limit'], limit=data['limit'], sort_by=data['sort_by'], order=data['order']) }}">
+            <button {% if not data['cursor'] or data['cursor'] - data['limit'] <= 0 %} disabled {% endif %}>Previous</button>
+        </a>
         
         <!-- Next Button on the right -->
-        {% if data['has_more'] %}
-            <a href="{{ url_for('get_prediction', cursor=data['cursor'], limit=data['limit'], sort_by=data['sort_by'], order=data['order']) }}">
-                <button>Next</button>
-            </a>
-        {% endif %}
+        <a href="{{ url_for('get_prediction', cursor=data['cursor'], limit=data['limit'], sort_by=data['sort_by'], order=data['order']) }}">
+            <button {% if not data['has_more'] %} disabled {% endif %}>Next</button>
+        </a>
     </div>
-    
+
+    <!-- Go Back Button -->
+    <div class="go-back">
+        <a href="/">
+            <button>Go Back</button>
+        </a>
+    </div>
 </body>
 </html>

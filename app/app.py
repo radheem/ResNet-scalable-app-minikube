@@ -1,6 +1,6 @@
 import io
 from PIL import Image
-from flask import Flask, redirect, request, jsonify, g, render_template
+from flask import Flask, request, jsonify, g, render_template
 import json
 import time
 import logging
@@ -26,13 +26,12 @@ rabbitmq_host = environ.get('RABBITMQ_HOST', 'localhost')
 rabbitmq_queue = environ.get('RABBITMQ_QUEUE', 'requests_queue')
 rabbitmq_username = environ.get('RABBITMQ_USERNAME', 'guest')   
 rabbitmq_password = environ.get('RABBITMQ_PASSWORD', 'guest')
-# Prometheus metrics
+
 route_hit_counter = Counter('route_hits', 'Count of hits to routes', ['route'])
 REQUEST_TIME = Summary('request_processing_seconds', 'Time spent processing request', registry=REGISTRY)
 REQUEST_COUNT = Counter('request_count', 'Total number of requests', ['method', 'endpoint', 'http_status'], registry=REGISTRY)
 REQUEST_LATENCY = Histogram('request_latency_seconds', 'Request latency', ['method', 'endpoint'], registry=REGISTRY)
 
-# Initialize Flask app
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -77,7 +76,6 @@ rabbitmq_manager = RabbitMQConnectionManager(
     rabbitmq_password=rabbitmq_password
 )
 
-# Call connection initialization during app startup
 initialize_connections()
 
 @app.route('/predict', methods=['POST'])
@@ -85,9 +83,9 @@ initialize_connections()
 def predict():
     route_hit_counter.labels(route='/predict').inc()
     try:
-        resp = {'msg': 'Image not found in request', 'hint': 'Add the image to a key named "image"'}
+        resp = {'header': 'Image not found in request', 'msg': 'Add the image to a key named "image"'}
         if 'image' not in request.files:
-            return jsonify(resp), 400
+            return render_template('processing.html', data=resp)
         
         file = request.files['image']    
         try:
@@ -99,10 +97,9 @@ def predict():
             image.save(image_bytes, format=image.format)
             encoded_image = base64.b64encode(image_bytes.getvalue()).decode('utf-8')
         except Exception as e:
-            resp = {'msg': 'Invalid image data', 'hint': f'The image may not be of a valid extension {ALLOWED_EXTENSIONS}', 'error': str(e)}
-            return jsonify(resp), 400
+            resp = {'header': 'Invalid image data', 'msg': 'The image may not be of a valid extension {}. Error: {}'.format(ALLOWED_EXTENSIONS,str(e))}
+            return render_template('processing.html', data=resp)    
         
-        # Insert request into PostgreSQL database
         try:
             record = ClassificationRequest(status='PENDING', label=None)
             db.session.add(record)
@@ -111,18 +108,19 @@ def predict():
         except Exception as db_error:
             db.session.rollback()
             logging.error(f"Failed to save classification request to the database: {db_error}")
-            return jsonify({'msg': 'Database error occurred', 'error': str(db_error)}), 500
+            data = {'header': 'Database Error', 'msg': str(db_error)}
+            return render_template('processing.html', data=data)
 
-        # Publish message to RabbitMQ
         try:
             msg = {'id': request_id, 'image': encoded_image} 
             rabbitmq_manager.publish_message(json.dumps(msg))
         except Exception as rabbitmq_error:
             logging.error(f"Failed to publish message to RabbitMQ: {rabbitmq_error}")
-            return jsonify({'msg': 'Failed to publish message to RabbitMQ', 'error': str(rabbitmq_error)}), 500
-        data = {'msg': 'Prediction request received', 'request_id': request_id}
-        return render_template('result.html', data=data)
+            data = {'header':'RabbitMQ Error','msg': 'Failed to publish message to RabbitMQ. Error:{}'.format(str(rabbitmq_error))}
+            return render_template('processing.html', data=data)
 
+        data = {'msg': 'Prediction request received. Request id:{}'.format(request_id)}
+        return render_template('processing.html', data=data)
     except Exception as e:
         logging.error(f"Error occurred: {e}")
         return jsonify({'error': str(e)}), 500
@@ -133,7 +131,7 @@ def get_prediction():
     route_hit_counter.labels(route='/results').inc()
     try:
         route_hit_counter.labels(route='/results').inc()
-        # If request ID is provided, return the result for that ID
+        
         request_id = request.args.get('id')
         if request_id:
             print(f"request_id: {request_id}")
@@ -146,11 +144,11 @@ def get_prediction():
             return jsonify({'id': result[0][0], 'status': result[0][1], 'label': result[0][2]}), 200
         
         start = int(request.args.get('cursor', 0))
-        limit = int(request.args.get('limit', 4))
+        limit = int(request.args.get('limit', 10)) + 1
         sort_by = request.args.get('sort_by', 'id')
         order = request.args.get('order', 'asc').lower()
-        print(f"here")
-        print(f"start: {start}, limit: {limit}, sort_by: {sort_by}, order: {order}")
+        
+        print(f"request: cursor: {start}, limit: {limit}, sort_by: {sort_by}, order: {order}")
         order_clause = 'ASC' if order == 'asc' else 'DESC'
         allowed_sort_fields = ['id', 'status', 'label']
         
@@ -168,19 +166,22 @@ def get_prediction():
 
         data = [{'id': row[0], 'status': row[1], 'label': row[2]} for row in results]
         
-        # Check if there is more data by getting the next record
-        has_more = len(data) == limit
-        next_cursor = data[-1]['id'] if has_more else None
+        has_more = len(data) > limit - 1
+        if has_more:
+            data = data[:-1]
 
+        next_cursor = data[-1]['id']
+        prev_cursor = start if start > 0 else 0
         response = {
             'data': data,
-            'limit': limit,
+            'limit': limit-1,
             'sort_by': sort_by,
             'order': order,
             'cursor': next_cursor,
-            'prev_cursor': start-limit if int(start-limit) > 0 else 0,
+            'prev_cursor': prev_cursor,
             'has_more': has_more
         }
+        print(f"response: cursor: {response['cursor']}, prev_cursor: {response['prev_cursor']},limit: {limit}, sort_by: {sort_by}, order: {order}")
         return render_template('results.html', data=response)
 
     except Exception as e:
@@ -207,9 +208,9 @@ def start_metrics_server():
     start_http_server(8000)
 
 if __name__ == '__main__':
-    # start_metrics_server()  # Start the Prometheus metrics server
+    start_metrics_server()  # Start the Prometheus metrics server
     with app.app_context():
         db.create_all()    
     migrate = Migrate(app, db)
-    app.run(host='0.0.0.0', port=5000, debug=True)  # Start the Flask app
+    app.run(host='0.0.0.0', port=5000)  # Start the Flask app
     
