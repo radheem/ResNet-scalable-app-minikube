@@ -18,7 +18,7 @@ def post_images(api_url, image_path, batch_size):
             print("Response:", response.text)
         
 if __name__ == "__main__":
-    api_url = "http://127.0.0.1/predict"  
+    api_url = "http://127.0.0.1:5000/predict"  
     image_folder = "./data/sampleImages/n01440764_tench.JPEG"
     batch_size = 200 
     post_images(api_url, image_folder,batch_size)

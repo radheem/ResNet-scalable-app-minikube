@@ -52,6 +52,8 @@ spec:
           value: "5432"
         - name: RABBITMQ_HOST        
           value: "rabbitmq"
+        - name: RABBITMQ_PORT
+          value: "5672"
         - name: RABBITMQ_QUEUE
           value: "requests_queue"
         - name: RABBITMQ_USERNAME

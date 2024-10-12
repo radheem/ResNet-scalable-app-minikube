@@ -20,6 +20,7 @@ db_name = environ.get('DB_NAME', 'resnet18_db')
 db_user = environ.get('DB_USER', 'root')
 db_password = environ.get('DB_PASSWORD', 'password')
 rabbitmq_host = environ.get('RABBITMQ_HOST', 'localhost')
+rabbitmq_port = int(environ.get('RABBITMQ_PORT', 5672))
 rabbitmq_queue = environ.get('RABBITMQ_QUEUE', 'requests_queue')
 rabbitmq_username = environ.get('RABBITMQ_USERNAME', 'guest')   
 rabbitmq_password = environ.get('RABBITMQ_PASSWORD', 'guest')
@@ -45,6 +46,7 @@ classifier = ImageClassifier(model_name='resnet18', model_path=model_path, label
 # initialize the RabbitMQ connection manager
 rabbitmq_manager = RabbitMQConnectionManager(
     host=rabbitmq_host,
+    port=rabbitmq_port,
     queue_name=rabbitmq_queue,
     rabbitmq_username=rabbitmq_username,
     rabbitmq_password=rabbitmq_password
