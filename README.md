@@ -6,10 +6,13 @@ python3 scripts/load_model.py
 eval $(minikube docker-env)
 ```
 ``` bash
-docker build -t flask-app:latest .
+docker buildx build -t flask-app:latest -f ./docker/producer/Dockerfile.flaskapp .
 ```
 ``` bash
-docker build -t autoscaler:latest . -f Dockerfile.CPA 
+docker buildx build -t worker-app:latest -f ./docker/consumer/Dockerfile.worker .
+```
+``` bash
+docker buildx build -t autoscaler:latest . -f Dockerfile.CPA 
 ```
 ``` bash
 minikube start --driver=docker
@@ -114,7 +117,7 @@ minikube tunnel
 
 ## Verify deployment
 1. Go to any browser 
-2. Visit http://localhost:80
+2. Visit http://localhost:5000
 
 ## Access minikube dashboard using
 ```bash 
