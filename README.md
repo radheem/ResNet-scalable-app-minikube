@@ -12,7 +12,7 @@ docker buildx build -t flask-app:latest -f ./docker/producer/Dockerfile.flaskapp
 docker buildx build -t worker-app:latest -f ./docker/consumer/Dockerfile.worker .
 ```
 ``` bash
-docker build -t autoscaler:latest . -f Dockerfile.CPA 
+docker buildx build -t autoscaler:latest . -f Dockerfile.CPA 
 ```
 ``` bash
 minikube start --driver=docker
